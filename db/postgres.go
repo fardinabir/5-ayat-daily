@@ -6,7 +6,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
-	"one-minute-quran/models"
 )
 
 var (
@@ -32,7 +31,7 @@ func ConnectDB() *gorm.DB {
 		log.Fatal("DB connection error", err)
 		return nil
 	}
-	err = Db.AutoMigrate(models.Subscriber{})
+	err = Db.AutoMigrate(getModels()...)
 	if err != nil {
 		return nil
 	}

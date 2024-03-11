@@ -1,20 +1,19 @@
 package controller
 
 import (
-	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/viper"
 	"log"
 	"one-minute-quran/controller/interfaces"
 	"one-minute-quran/db"
 	"one-minute-quran/db/repos"
 	"one-minute-quran/models"
-	"strconv"
 )
 
 func init() {
 	LoadFromConfig()
 }
+
+const SubscriberChanBuffer int = 10
 
 type Resource struct {
 	Bot       interfaces.Bot
@@ -43,43 +42,15 @@ func (rs *Resource) PublishToSubscribers(message string) error {
 }
 
 func (rs *Resource) ServeBot() {
-	updates := rs.Bot.ServeBot().(tgbotapi.UpdatesChannel)
-	// Process messages from updates chan
-	for update := range updates {
-		if update.Message != nil {
-			// Get the message text and chat ID
-			messageText := update.Message.Text
-			chatID := strconv.Itoa(int(update.Message.Chat.ID))
-			log.Println("Message from chatID : ", chatID, "Message Text : ", messageText)
+	newSubscriber := make(chan models.Subscriber, SubscriberChanBuffer)
+	go rs.Bot.ServeBot(newSubscriber)
 
-			if messageText == "/start" {
-				// Send a welcome message
-				err := rs.Bot.SendMessage("Hello User, Welcome!\n To subscribe the channel click or type:\n/subscribe", chatID)
-				if err != nil {
-					log.Println(err)
-				}
-			} else if messageText == "/subscribe" {
-				sub := &models.Subscriber{
-					ChatID:  chatID,
-					Status:  "active",
-					Channel: "telegram",
-				}
-				err := rs.SubsStore.Save(sub)
-				if err != nil {
-					log.Println("Cannot Save Subscriber Info: ", err)
-					continue
-				}
-				err = rs.Bot.SendMessage("Now you are subscribed to one-minute-quran! Thanks!", chatID)
-				if err != nil {
-					log.Println("failed to send message : ", err)
-				}
-
-				adminId := viper.GetString("telegram.adminID")
-				err = rs.Bot.SendMessage(fmt.Sprintf("%v joined the channel", chatID), adminId)
-				if err != nil {
-					log.Println("Admin approve request msg: ", err)
-				}
-			}
+	for subscriber := range newSubscriber {
+		err := rs.SubsStore.Save(&subscriber)
+		if err != nil {
+			log.Println("Cannot Save Subscriber Info: ", err)
+		} else {
+			log.Println("New subscriber added successfully")
 		}
 	}
 }
