@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
-	"one-minute-quran/controller/interfaces"
 	"one-minute-quran/db/repos"
 	"one-minute-quran/models"
 )
@@ -14,32 +13,29 @@ func init() {
 }
 
 type Resource struct {
-	Bot       interfaces.Bot
-	SubsStore *repos.SubscriberStore
+	Bot   Bot
+	Store *repos.Store
 }
 
 func NewResource() *Resource {
-	tgBot := models.NewTgBot()
+	tb, err := NewTgBot()
+	if err != nil {
+		return nil
+	}
 	ss := repos.NewSubsStore()
 	rs := &Resource{
-		Bot:       tgBot,
-		SubsStore: ss,
+		Bot:   tb,
+		Store: ss,
 	}
-	tgBot.Rs = rs
 	return rs
 }
 
 func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
 	ayahText := FormatAyahText(ayah)
 
-	rs.SubsStore.SaveOutgoingMessage(&models.OutgoingMessage{
-		ReceiverType: models.RECEIVERTYPEALL,
-		AyahID:       ayah.ID,
-	})
-
-	subscribersList, err := rs.SubsStore.GetAllSubscribers()
+	subscribersList, err := rs.Store.GetAllSubscribers()
 	for _, subscriber := range subscribersList {
-		err = rs.Bot.SendMessage(ayahText, subscriber.ChatID)
+		err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -54,7 +50,7 @@ func FormatAyahText(ayah *models.Ayah) string {
 }
 
 func (rs *Resource) ServeBot() {
-	go rs.Bot.ServeBot()
+	rs.Bot.ServeBotAPI(rs)
 }
 
 func LoadFromConfig() {

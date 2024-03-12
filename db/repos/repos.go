@@ -7,21 +7,21 @@ import (
 	"one-minute-quran/models"
 )
 
-type SubscriberStore struct {
+type Store struct {
 	DB *gorm.DB
 }
 
-var subsStore *SubscriberStore
+var storeInstance *Store
 
-func NewSubsStore() *SubscriberStore {
-	if subsStore != nil {
-		return subsStore
+func NewSubsStore() *Store {
+	if storeInstance != nil {
+		return storeInstance
 	}
-	subsStore = &SubscriberStore{DB: db.ConnectDB()}
-	return subsStore
+	storeInstance = &Store{DB: db.ConnectDB()}
+	return storeInstance
 }
 
-func (s *SubscriberStore) Save(sd *models.Subscriber) error {
+func (s *Store) Save(sd *models.Subscriber) error {
 	res := s.DB.Save(sd)
 	if res.Error != nil {
 		log.Println("Error while creating entry in db", res.Error)
@@ -30,7 +30,7 @@ func (s *SubscriberStore) Save(sd *models.Subscriber) error {
 	return nil
 }
 
-func (s *SubscriberStore) GetSubscriber(chatID string) (*models.Subscriber, error) {
+func (s *Store) GetSubscriber(chatID string) (*models.Subscriber, error) {
 	var sd models.Subscriber
 	res := s.DB.Model(&models.Subscriber{}).Where("chat_id = ?", chatID).First(&sd)
 	if res.Error != nil {
@@ -40,7 +40,7 @@ func (s *SubscriberStore) GetSubscriber(chatID string) (*models.Subscriber, erro
 	return &sd, nil
 }
 
-func (s *SubscriberStore) GetAllSubscribers() ([]models.Subscriber, error) {
+func (s *Store) GetAllSubscribers() ([]models.Subscriber, error) {
 	var sd []models.Subscriber
 	res := s.DB.Model(&models.Subscriber{}).Where("status = ? ", "active").Find(&sd)
 	if res.Error != nil {
@@ -50,7 +50,7 @@ func (s *SubscriberStore) GetAllSubscribers() ([]models.Subscriber, error) {
 	return sd, nil
 }
 
-func (s *SubscriberStore) GetAyah(id int) (*models.Ayah, error) {
+func (s *Store) GetAyah(id int) (*models.Ayah, error) {
 	var ay models.Ayah
 	res := s.DB.First(&ay, id)
 	if res.Error != nil {
@@ -60,7 +60,7 @@ func (s *SubscriberStore) GetAyah(id int) (*models.Ayah, error) {
 	return &ay, nil
 }
 
-func (s *SubscriberStore) SaveOutgoingMessage(ogMsg *models.OutgoingMessage) error {
+func (s *Store) SaveOutgoingMessage(ogMsg *models.OutgoingMessage) error {
 	res := s.DB.Save(ogMsg)
 	if res.Error != nil {
 		log.Println("Error while creating entry in db", res.Error)
@@ -69,11 +69,21 @@ func (s *SubscriberStore) SaveOutgoingMessage(ogMsg *models.OutgoingMessage) err
 	return nil
 }
 
-func (s *SubscriberStore) SaveIncomingMessage(inMsg *models.IncomingMessage) error {
+func (s *Store) SaveIncomingMessage(inMsg *models.IncomingMessage) error {
 	res := s.DB.Save(inMsg)
 	if res.Error != nil {
 		log.Println("Error while creating entry in db", res.Error)
 		return res.Error
 	}
 	return nil
+}
+
+func (s *Store) GetLastOutgoingAyah(receiverChatID string) (*models.OutgoingMessage, error) {
+	var om models.OutgoingMessage
+	res := s.DB.Model(&models.OutgoingMessage{}).Where("receiver_chat_id = ? AND ayah_id IS NOT NULL", receiverChatID).Order("id desc").Limit(1).First(&om)
+	if res.Error != nil {
+		log.Println("Error while getting ayah in db", res.Error)
+		return nil, res.Error
+	}
+	return &om, nil
 }

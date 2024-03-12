@@ -21,8 +21,9 @@ type IncomingMessage struct {
 
 type OutgoingMessage struct {
 	gorm.Model
-	ReceiverType string
-	AyahID       uint
+	ReceiverChatID string
+	AyahID         *uint
+	GeneralMessage string
 }
 
 type Ayah struct {
