@@ -12,7 +12,7 @@ import (
 )
 
 func TestArabic_InsertData(t *testing.T) {
-	viper.SetConfigFile("../config/config.yaml")
+	viper.SetConfigFile("../config/.config.yaml")
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file: %s", err)
 	}

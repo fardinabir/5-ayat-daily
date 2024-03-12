@@ -136,6 +136,5 @@ func (t *tgBot) fetchRandomVerse(rs *Resource, chatID string) error {
 }
 
 func (t *tgBot) handleInvalidCommand(rs *Resource, chatID string) error {
-	// Send a welcome message
 	return t.SendMessage(rs, "Invalid command or format, type '/' to see the available commands", chatID, nil)
 }

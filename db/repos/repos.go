@@ -80,7 +80,8 @@ func (s *Store) SaveIncomingMessage(inMsg *models.IncomingMessage) error {
 
 func (s *Store) GetLastOutgoingAyah(receiverChatID string) (*models.OutgoingMessage, error) {
 	var om models.OutgoingMessage
-	res := s.DB.Model(&models.OutgoingMessage{}).Where("receiver_chat_id = ? AND ayah_id IS NOT NULL", receiverChatID).Order("id desc").Limit(1).First(&om)
+	res := s.DB.Model(&models.OutgoingMessage{}).Where("receiver_chat_id = ? AND ayah_id IS NOT NULL", receiverChatID).
+		Order("id desc").Limit(1).First(&om)
 	if res.Error != nil {
 		log.Println("Error while getting ayah in db", res.Error)
 		return nil, res.Error

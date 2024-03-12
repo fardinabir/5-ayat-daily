@@ -54,7 +54,7 @@ func (rs *Resource) ServeBot() {
 }
 
 func LoadFromConfig() {
-	viper.SetConfigFile("./config/config.yaml")
+	viper.SetConfigFile("./config/.config.yaml")
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file: %s", err)
 	}

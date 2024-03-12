@@ -1,0 +1,13 @@
+telegram:
+  token: 7023645442:AAGhUiMH3GunS9hjgj9tD_DWfAJHGJTYiESzA
+  adminId: 621224055
+
+ticker:
+  duration: 2h
+
+database:
+  host: localhost
+  port: 5432
+  password: 12345
+  user: postgres
+  dbname: quran_daily_test # one_ayah_daily # quran_daily_test
