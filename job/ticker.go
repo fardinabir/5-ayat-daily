@@ -4,10 +4,11 @@ import (
 	"github.com/spf13/viper"
 	"log"
 	"one-minute-quran/controller"
+	"sync"
 	"time"
 )
 
-func StartTicker(rs *controller.Resource) {
+func StartTicker(rs *controller.Resource, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(viper.GetDuration("ticker.duration"))
 
 	defer ticker.Stop()
