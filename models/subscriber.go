@@ -2,6 +2,9 @@ package models
 
 import "gorm.io/gorm"
 
+const RECEIVERTYPESINGLE = "single"
+const RECEIVERTYPEALL = "all"
+
 type Subscriber struct {
 	gorm.Model
 	ChatID  string `gorm:"uniqueIndex"`
@@ -18,8 +21,8 @@ type IncomingMessage struct {
 
 type OutgoingMessage struct {
 	gorm.Model
-	MessageText string
-	AyahID      uint
+	ReceiverType string
+	AyahID       uint
 }
 
 type Ayah struct {

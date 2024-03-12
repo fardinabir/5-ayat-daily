@@ -5,22 +5,32 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/viper"
 	"log"
+	"one-minute-quran/controller"
 	"strconv"
+	"strings"
 )
 
 type tgBot struct {
 	API *tgbotapi.BotAPI
+	Rs  *controller.Resource
 }
 
 //var tgBotAPI *tgbotapi.BotAPI
 
+var tgBotInstance *tgBot
+
 func NewTgBot() *tgBot {
+	if tgBotInstance != nil {
+		return tgBotInstance
+	}
 	token := viper.GetString("telegram.token")
 	tgBotAPI, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
+		log.Println("error while bot initialization", err)
 		return nil
 	}
-	return &tgBot{tgBotAPI}
+	tgBotInstance = &tgBot{tgBotAPI, nil}
+	return tgBotInstance
 }
 
 func (t *tgBot) SendMessage(message, chatID string) error {
@@ -34,7 +44,7 @@ func (t *tgBot) SendMessage(message, chatID string) error {
 	return nil
 }
 
-func (t *tgBot) ServeBot(subsChan chan<- Subscriber) {
+func (t *tgBot) ServeBot() {
 	// Update Config From TgBOT
 	updateConfig := tgbotapi.NewUpdate(0)
 	updates := t.API.GetUpdatesChan(updateConfig)
@@ -46,16 +56,25 @@ func (t *tgBot) ServeBot(subsChan chan<- Subscriber) {
 			messageText := update.Message.Text
 			chatID := strconv.Itoa(int(update.Message.Chat.ID))
 			log.Println("Message from chatID : ", chatID, "Message Text : ", messageText)
+			command := strings.Split(messageText, " ")[0] // first word of messageText
 
-			if messageText == "/start" {
+			t.Rs.SubsStore.SaveIncomingMessage(&IncomingMessage{
+				ChatID:         chatID,
+				MessageText:    messageText,
+				MessageCommand: command,
+			})
+
+			// process command
+			if command == "/start" {
 				// Send a welcome message
 				t.handleStart(chatID)
-			} else if messageText == "/subscribe" {
-				t.handleSubscribe(chatID, subsChan)
+			} else if command == "/subscribe" {
+				t.handleSubscribe(chatID)
+			} else if command == "/next" {
+				t.fetchNextVerse(chatID)
 			}
 		}
 	}
-	close(subsChan)
 }
 
 func (t *tgBot) handleStart(chatID string) error {
@@ -63,14 +82,12 @@ func (t *tgBot) handleStart(chatID string) error {
 	return t.SendMessage("Hello User, Welcome!\n To subscribe the channel click or type:\n/subscribe", chatID)
 }
 
-func (t *tgBot) handleSubscribe(chatID string, subsChan chan<- Subscriber) error {
-	sub := Subscriber{
+func (t *tgBot) handleSubscribe(chatID string) error {
+	t.Rs.SubsStore.Save(&Subscriber{
 		ChatID:  chatID,
 		Status:  "active",
 		Channel: "telegram",
-	}
-	// sends to newSubscriber Channel
-	subsChan <- sub
+	})
 
 	if err := t.SendMessage("Now you are subscribed to one-minute-quran! Thanks!", chatID); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
@@ -80,6 +97,19 @@ func (t *tgBot) handleSubscribe(chatID string, subsChan chan<- Subscriber) error
 	if err := t.SendMessage(fmt.Sprintf("%v joined the channel", chatID), adminID); err != nil {
 		return fmt.Errorf("failed to send admin notification: %w", err)
 	}
+	return nil
+}
 
+func (t *tgBot) fetchNextVerse(chatID string) error {
+	ayah := t.Rs.FetchNewVerse()
+	ayahText := controller.FormatAyahText(ayah)
+
+	t.Rs.SubsStore.SaveOutgoingMessage(&OutgoingMessage{
+		ReceiverType: RECEIVERTYPESINGLE,
+		AyahID:       ayah.ID,
+	})
+	if err := t.SendMessage(ayahText, chatID); err != nil {
+		return fmt.Errorf("failed to send ayah message: %w", err)
+	}
 	return nil
 }

@@ -1,14 +1,14 @@
 package job
 
 import (
+	"github.com/spf13/viper"
 	"log"
 	"one-minute-quran/controller"
-	verse_loader "one-minute-quran/controller/verse-loader"
 	"time"
 )
 
 func StartTicker(rs *controller.Resource) {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(viper.GetDuration("ticker.duration"))
 
 	defer ticker.Stop()
 	for {
@@ -16,8 +16,8 @@ func StartTicker(rs *controller.Resource) {
 		case <-ticker.C:
 			go func() {
 				log.Println("######################### Started Fetching #########################")
-				verse := verse_loader.FetchNewVerse()
-				err := rs.PublishToSubscribers(verse)
+				ayah := rs.FetchNewVerse()
+				err := rs.PublishToSubscribers(ayah)
 				if err != nil {
 					log.Println("err while publishing : ", err)
 				}

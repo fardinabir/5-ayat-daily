@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"one-minute-quran/controller/interfaces"
-	"one-minute-quran/db"
 	"one-minute-quran/db/repos"
 	"one-minute-quran/models"
 )
@@ -13,8 +13,6 @@ func init() {
 	LoadFromConfig()
 }
 
-const SubscriberChanBuffer int = 10
-
 type Resource struct {
 	Bot       interfaces.Bot
 	SubsStore *repos.SubscriberStore
@@ -22,17 +20,26 @@ type Resource struct {
 
 func NewResource() *Resource {
 	tgBot := models.NewTgBot()
-	ss := &repos.SubscriberStore{DB: db.ConnectDB()}
-	return &Resource{
+	ss := repos.NewSubsStore()
+	rs := &Resource{
 		Bot:       tgBot,
 		SubsStore: ss,
 	}
+	tgBot.Rs = rs
+	return rs
 }
 
-func (rs *Resource) PublishToSubscribers(message string) error {
+func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
+	ayahText := FormatAyahText(ayah)
+
+	rs.SubsStore.SaveOutgoingMessage(&models.OutgoingMessage{
+		ReceiverType: models.RECEIVERTYPEALL,
+		AyahID:       ayah.ID,
+	})
+
 	subscribersList, err := rs.SubsStore.GetAllSubscribers()
 	for _, subscriber := range subscribersList {
-		err = rs.Bot.SendMessage(message, subscriber.ChatID)
+		err = rs.Bot.SendMessage(ayahText, subscriber.ChatID)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -41,18 +48,13 @@ func (rs *Resource) PublishToSubscribers(message string) error {
 	return nil
 }
 
-func (rs *Resource) ServeBot() {
-	newSubscriber := make(chan models.Subscriber, SubscriberChanBuffer)
-	go rs.Bot.ServeBot(newSubscriber)
+func FormatAyahText(ayah *models.Ayah) string {
+	return fmt.Sprintf("%v,\n(%v),\n(%v)\n[%v:%v]", ayah.AyahTextArabic, ayah.AyahTextBangla,
+		ayah.AyahTextEnglish, ayah.SuraNo, ayah.VerseNo)
+}
 
-	for subscriber := range newSubscriber {
-		err := rs.SubsStore.Save(&subscriber)
-		if err != nil {
-			log.Println("Cannot Save Subscriber Info: ", err)
-		} else {
-			log.Println("New subscriber added successfully")
-		}
-	}
+func (rs *Resource) ServeBot() {
+	go rs.Bot.ServeBot()
 }
 
 func LoadFromConfig() {
