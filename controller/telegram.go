@@ -78,6 +78,8 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 				t.handleSubscribe(rs, chatID)
 			} else if command == "/next" {
 				t.fetchNextVerse(rs, chatID)
+			} else if command == "/previous" {
+				t.fetchPreviousVerse(rs, chatID)
 			} else if command == "/random" {
 				t.fetchRandomVerse(rs, chatID)
 			} else {
@@ -117,6 +119,21 @@ func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 		return err
 	}
 	ayah := rs.FetchNextVerse(int(*lastMessage.AyahID))
+	ayahText := FormatAyahText(ayah)
+
+	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+		return fmt.Errorf("failed to send ayah message: %w", err)
+	}
+	return nil
+}
+
+func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
+	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
+	if err != nil {
+		log.Println("error while getting last outgoing message : ", err)
+		return err
+	}
+	ayah := rs.FetchPreviousVerse(int(*lastMessage.AyahID))
 	ayahText := FormatAyahText(ayah)
 
 	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {

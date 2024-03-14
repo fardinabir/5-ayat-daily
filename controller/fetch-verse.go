@@ -24,3 +24,13 @@ func (rs *Resource) FetchNextVerse(ayahId int) *models.Ayah {
 	ayah, _ := rs.Store.GetAyah(nextAyah)
 	return ayah
 }
+
+func (rs *Resource) FetchPreviousVerse(ayahId int) *models.Ayah {
+	nextAyah := ayahId - 1
+	if nextAyah == 0 {
+		nextAyah = 6236
+	}
+	log.Println("-------- fetching previous verse : ", nextAyah)
+	ayah, _ := rs.Store.GetAyah(nextAyah)
+	return ayah
+}
