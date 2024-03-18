@@ -1,6 +1,7 @@
 package job
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"one-minute-quran/controller"
@@ -15,15 +16,53 @@ func StartTicker(rs *controller.Resource, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-ticker.C:
-			go func() {
-				log.Println("######################### Started Fetching #########################")
-				ayah := rs.FetchNewVerse()
-				err := rs.PublishToSubscribers(ayah)
-				if err != nil {
-					log.Println("err while publishing : ", err)
-				}
-				log.Println("######################### Finished Fetching #########################\n\n")
-			}()
+			trigger := compareTimes()
+			if trigger {
+				go func() {
+					log.Println("######################### Started Fetching #########################")
+					ayah := rs.FetchNewVerse()
+					err := rs.PublishToSubscribers(ayah)
+					if err != nil {
+						log.Println("err while publishing : ", err)
+					}
+					log.Println("######################### Finished Fetching #########################\n\n")
+				}()
+			}
 		}
 	}
+}
+
+func compareTimes() bool {
+	dhakaTime, err := time.LoadLocation("Asia/Dhaka")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+		return false
+	}
+
+	// Use the loaded time zone
+	currentTime := time.Now().In(dhakaTime).Format("15:04")
+	currentTimeFlat, _ := time.Parse("15:04", currentTime)
+	// Read trigger time values from the configuration file
+	triggerTimes := viper.GetStringSlice("trigger_times")
+
+	// Check matching time
+	for _, triggerTime := range triggerTimes {
+		parsedTime, err := time.Parse("15:04", triggerTime)
+		if err != nil {
+			log.Println("failed to parse time : ", err)
+			return false
+		}
+
+		// check close match for given time and cur time
+		diff := currentTimeFlat.Sub(parsedTime)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff < 5*time.Minute {
+			log.Println("Caught nearest trigger time, diff is : ", diff)
+			return true
+		}
+		//log.Println("triggerTime : ", triggerTime, " diff : ", diff)
+	}
+	return false
 }
