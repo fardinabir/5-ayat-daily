@@ -1,9 +1,9 @@
 package main
 
 import (
+	"five-ayat-daily/controller"
+	"five-ayat-daily/job"
 	"log"
-	"one-minute-quran/controller"
-	"one-minute-quran/job"
 	"sync"
 )
 

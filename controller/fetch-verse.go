@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"five-ayat-daily/models"
 	"log"
 	"math/rand"
-	"one-minute-quran/models"
 	"time"
 )
 

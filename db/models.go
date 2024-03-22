@@ -1,6 +1,6 @@
 package db
 
-import "one-minute-quran/models"
+import "five-ayat-daily/models"
 
 func getModels() []interface{} {
 	var Models []interface{}

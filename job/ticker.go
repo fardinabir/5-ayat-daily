@@ -1,10 +1,10 @@
 package job
 
 import (
+	"five-ayat-daily/controller"
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
-	"one-minute-quran/controller"
 	"sync"
 	"time"
 )
@@ -54,15 +54,12 @@ func compareTimes() bool {
 		}
 
 		// check close match for given time and cur time
-		diff := currentTimeFlat.Sub(parsedTime)
-		if diff < 0 {
-			diff = -diff
-		}
-		if diff < 5*time.Minute {
+		diff := parsedTime.Sub(currentTimeFlat)
+		if diff < 5*time.Minute && diff >= 0 {
 			log.Println("Caught nearest trigger time, diff is : ", diff)
 			return true
 		}
-		//log.Println("triggerTime : ", triggerTime, " diff : ", diff)
+		//log.Println("currentTime : ", currentTime, " parsedTime : ", parsedTime, " diff : ", diff)
 	}
 	return false
 }

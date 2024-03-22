@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"five-ayat-daily/db/repos"
+	"five-ayat-daily/models"
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
-	"one-minute-quran/db/repos"
-	"one-minute-quran/models"
 )
 
 func init() {

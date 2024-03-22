@@ -2,10 +2,10 @@ package db
 
 import (
 	"encoding/csv"
+	"five-ayat-daily/models"
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
-	"one-minute-quran/models"
 	"os"
 	"strconv"
 	"testing"

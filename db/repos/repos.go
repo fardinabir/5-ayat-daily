@@ -1,10 +1,10 @@
 package repos
 
 import (
+	"five-ayat-daily/db"
+	"five-ayat-daily/models"
 	"gorm.io/gorm"
 	"log"
-	"one-minute-quran/db"
-	"one-minute-quran/models"
 )
 
 type Store struct {

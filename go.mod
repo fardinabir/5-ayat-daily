@@ -1,4 +1,4 @@
-module one-minute-quran
+module five-ayat-daily
 
 go 1.21.0
 

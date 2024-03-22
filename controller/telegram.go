@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"five-ayat-daily/models"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/viper"
 	"log"
-	"one-minute-quran/models"
 	"strconv"
 	"strings"
 )
