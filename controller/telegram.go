@@ -103,12 +103,13 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
 		Channel: "telegram",
 	})
 
-	if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
 			return fmt.Errorf("failed to send subscribe message: %w", err)
 		}
 		return nil
 	}
+	t.fetchRandomVerse(rs, chatID)
 	if err := t.SendMessage(rs, "Now you are subscribed! Thanks!", chatID, nil); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
 	}
