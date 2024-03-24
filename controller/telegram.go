@@ -105,6 +105,7 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
 		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
 			return fmt.Errorf("failed to send subscribe message: %w", err)
 		}
+		return nil
 	}
 	if err := t.SendMessage(rs, "Now you are subscribed! Thanks!", chatID, nil); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
