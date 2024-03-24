@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"five-ayat-daily/models"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 	"log"
 	"strconv"
 	"strings"
@@ -121,6 +123,9 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
 func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			t.fetchRandomVerse(rs, chatID)
+		}
 		log.Println("error while getting last outgoing message : ", err)
 		return err
 	}
@@ -136,6 +141,9 @@ func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			t.fetchRandomVerse(rs, chatID)
+		}
 		log.Println("error while getting last outgoing message : ", err)
 		return err
 	}
