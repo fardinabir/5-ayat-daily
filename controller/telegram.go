@@ -124,7 +124,9 @@ func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			t.fetchRandomVerse(rs, chatID)
+			if err := t.SendMessage(rs, "Subscribe to get messages, click or type /subscribe", chatID, nil); err != nil {
+				return fmt.Errorf("failed to send subscribe message: %w", err)
+			}
 		}
 		log.Println("error while getting last outgoing message : ", err)
 		return err
@@ -142,7 +144,9 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			t.fetchRandomVerse(rs, chatID)
+			if err := t.SendMessage(rs, "Subscribe to get messages, click or type /subscribe", chatID, nil); err != nil {
+				return fmt.Errorf("failed to send subscribe message: %w", err)
+			}
 		}
 		log.Println("error while getting last outgoing message : ", err)
 		return err
