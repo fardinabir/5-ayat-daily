@@ -95,12 +95,17 @@ func (t *tgBot) handleStart(rs *Resource, chatID string) error {
 }
 
 func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
-	rs.Store.Save(&models.Subscriber{
+	err := rs.Store.Create(&models.Subscriber{
 		ChatID:  chatID,
 		Status:  "active",
 		Channel: "telegram",
 	})
 
+	if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send subscribe message: %w", err)
+		}
+	}
 	if err := t.SendMessage(rs, "Now you are subscribed! Thanks!", chatID, nil); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
 	}

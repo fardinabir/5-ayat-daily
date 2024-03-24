@@ -13,6 +13,7 @@ func StartTicker(rs *controller.Resource, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(viper.GetDuration("ticker.duration"))
 
 	defer ticker.Stop()
+	log.Println("starting ticker...")
 	for {
 		select {
 		case <-ticker.C:

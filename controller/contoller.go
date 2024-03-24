@@ -50,6 +50,7 @@ func FormatAyahText(ayah *models.Ayah) string {
 }
 
 func (rs *Resource) ServeBot() {
+	log.Println("serving bot....")
 	rs.Bot.ServeBotAPI(rs)
 }
 

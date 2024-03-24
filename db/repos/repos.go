@@ -21,8 +21,8 @@ func NewSubsStore() *Store {
 	return storeInstance
 }
 
-func (s *Store) Save(sd *models.Subscriber) error {
-	res := s.DB.Save(sd)
+func (s *Store) Create(sd *models.Subscriber) error {
+	res := s.DB.Create(sd)
 	if res.Error != nil {
 		log.Println("Error while creating entry in db", res.Error)
 		return res.Error
