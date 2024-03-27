@@ -64,14 +64,8 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 			messageText := update.Message.Text
 			chatID := strconv.Itoa(int(update.Message.Chat.ID))
 			log.Println("Message from chatID : ", chatID, "Message Text : ", messageText)
-			command := strings.Split(messageText, " ")[0] // first word of messageText
-
-			rs.Store.SaveIncomingMessage(&models.IncomingMessage{
-				ChatID:         chatID,
-				MessageText:    messageText,
-				MessageCommand: command,
-			})
-
+			texts := strings.Split(messageText, " ") // first word of messageText
+			command := texts[0]
 			// process command
 			if command == "/start" {
 				// Send a welcome message
@@ -84,9 +78,18 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 				t.fetchPreviousVerse(rs, chatID)
 			} else if command == "/random" {
 				t.fetchRandomVerse(rs, chatID)
+			} else if command == "/insertPreferred" {
+				t.SavePreference(rs, texts[1], texts[2], chatID)
 			} else {
 				t.handleInvalidCommand(rs, chatID)
+				command = ""
 			}
+
+			rs.Store.SaveIncomingMessage(&models.IncomingMessage{
+				ChatID:         chatID,
+				MessageText:    messageText,
+				MessageCommand: command,
+			})
 		}
 	}
 }
@@ -94,6 +97,27 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 func (t *tgBot) handleStart(rs *Resource, chatID string) error {
 	// Send a welcome message
 	return t.SendMessage(rs, "Hello User, Welcome!\n To subscribe the channel click or type:\n/subscribe", chatID, nil)
+}
+
+func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) error {
+	sId, _ := strconv.Atoi(surahId)
+	vId, _ := strconv.Atoi(verseId)
+	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
+	fmt.Println(ayah)
+	if err != nil {
+		if err := t.SendMessage(rs, "Failed to get ayah with this combination", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+	}
+	rs.Store.SavePreferredVerse(&models.VersePreference{
+		VerseId: int(ayah.ID),
+	})
+	ayahText := FormatAyahText(ayah) + "\n\n --------- Saved as preferred verse -------- "
+
+	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+		return fmt.Errorf("failed to send ayah message: %w", err)
+	}
+	return nil
 }
 
 func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
@@ -162,7 +186,7 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 }
 
 func (t *tgBot) fetchRandomVerse(rs *Resource, chatID string) error {
-	ayah := rs.FetchNewVerse()
+	ayah := rs.FetchRandomVerse()
 	ayahText := FormatAyahText(ayah)
 
 	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {

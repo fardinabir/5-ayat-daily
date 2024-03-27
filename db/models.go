@@ -9,6 +9,7 @@ func getModels() []interface{} {
 	Models = append(Models, &models.OutgoingMessage{})
 	Models = append(Models, &models.Ayah{})
 	Models = append(Models, &models.Category{})
+	Models = append(Models, &models.VersePreference{})
 
 	return Models
 }

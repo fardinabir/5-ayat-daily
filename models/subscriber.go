@@ -41,3 +41,9 @@ type Category struct {
 	CategoryEnglish string
 	CategoryBangla  string
 }
+
+type VersePreference struct {
+	gorm.Model
+	VerseId int
+	Status  string
+}

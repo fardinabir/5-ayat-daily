@@ -60,6 +60,35 @@ func (s *Store) GetAyah(id int) (*models.Ayah, error) {
 	return &ay, nil
 }
 
+func (s *Store) GetAyahSuraVerse(suraNo, verseNo int) (*models.Ayah, error) {
+	var ay models.Ayah
+	res := s.DB.Where("sura_no = ? AND verse_no = ?", suraNo, verseNo).Find(&ay)
+	if res.Error != nil {
+		log.Println("Error while getting ayah in db", res.Error)
+		return nil, res.Error
+	}
+	return &ay, nil
+}
+
+func (s *Store) GetPreferredVerse() (*models.VersePreference, error) {
+	var vp models.VersePreference
+	res := s.DB.Where("status != ?", "sent").First(&vp)
+	if res.Error != nil {
+		log.Println("Error while getting ayah in db", res.Error)
+		return nil, res.Error
+	}
+	return &vp, nil
+}
+
+func (s *Store) SavePreferredVerse(ogMsg *models.VersePreference) error {
+	res := s.DB.Save(ogMsg)
+	if res.Error != nil {
+		log.Println("Error while creating entry in db", res.Error)
+		return res.Error
+	}
+	return nil
+}
+
 func (s *Store) SaveOutgoingMessage(ogMsg *models.OutgoingMessage) error {
 	res := s.DB.Save(ogMsg)
 	if res.Error != nil {
