@@ -1,9 +1,19 @@
 telegram:
   token: 7023645442:AAGhUiMH3GunS9hjgj9tD_DWfAJHGJTYiESzA
-  adminId: 621224055
+  adminId: 6212240112
 
 ticker:
   duration: 2h
+
+trigger_times:
+  - "4:40" # Fajr
+  - "12:40" # Duhr
+  - "16:25" # Asr
+  - "18:05" # Maghrib
+  - "1:35" # Isha
+
+operation:
+  verse_preference: enable
 
 database:
   host: localhost
