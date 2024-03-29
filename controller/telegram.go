@@ -158,26 +158,26 @@ func (t *tgBot) GetAyah(rs *Resource, texts *[]string, chatID string) error {
 }
 
 func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
-	//err := rs.Store.Create(&models.Subscriber{
-	//	ChatID:   chatID,
-	//	UserName: userName,
-	//	Status:   "active",
-	//	Channel:  "telegram",
-	//})
-	//
-	//if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-	//	if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
-	//		return fmt.Errorf("failed to send subscribe message: %w", err)
-	//	}
-	//	return nil
-	//}
+	err := rs.Store.Create(&models.Subscriber{
+		ChatID:   chatID,
+		UserName: userName,
+		Status:   "active",
+		Channel:  "telegram",
+	})
+
+	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send subscribe message: %w", err)
+		}
+		return nil
+	}
 	if err := t.SendMessage(rs, "Your subscription is greatly appreciated – thanks for joining us!\nHave your first Ayat of this day...", chatID, nil); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
 	}
 
 	t.fetchRandomVerse(rs, chatID)
 
-	err := t.SendMessage(rs, fmt.Sprintf("Available Commands :\n\n"+
+	err = t.SendMessage(rs, fmt.Sprintf("Available Commands :\n\n"+
 		"/subscribe - to get subscribed and receive updates daily\n"+
 		"/next - to get the next ayah\n"+
 		"/previous - to get the previous ayah\n"+
