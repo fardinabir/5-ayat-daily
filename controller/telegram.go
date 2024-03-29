@@ -79,10 +79,12 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 				t.fetchPreviousVerse(rs, chatID)
 			} else if command == "/random" {
 				t.fetchRandomVerse(rs, chatID)
-			} else if command == "/getAyah" {
-				t.GetAyah(rs, texts[1], texts[2], chatID)
+			} else if command == "/get_ayat" {
+				t.GetAyah(rs, &texts, chatID)
 			} else if command == "/insertPreferred" {
-				t.SavePreference(rs, texts[1], texts[2], chatID)
+				if len(texts) == 3 {
+					t.SavePreference(rs, texts[1], texts[2], chatID)
+				}
 			} else {
 				t.handleInvalidCommand(rs, chatID)
 				command = ""
@@ -127,14 +129,21 @@ func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) er
 	return nil
 }
 
-func (t *tgBot) GetAyah(rs *Resource, surahId, verseId, chatID string) error {
-	sId, _ := strconv.Atoi(surahId)
-	vId, _ := strconv.Atoi(verseId)
-	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
-	if err != nil {
-		if err := t.SendMessage(rs, "Please follow this format:\n/getAyah <suraNo> <ayatNo>", chatID, nil); err != nil {
+func (t *tgBot) GetAyah(rs *Resource, texts *[]string, chatID string) error {
+	if len(*texts) != 3 {
+		if err := t.SendMessage(rs, "Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
+		return fmt.Errorf("wrong command format")
+	}
+	sId, _ := strconv.Atoi((*texts)[1])
+	vId, _ := strconv.Atoi((*texts)[2])
+	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
+	if err != nil {
+		if err := t.SendMessage(rs, "Couldn't fetch requested ayat, Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+		return fmt.Errorf("wrong sura-ayat format")
 	}
 	ayahText := FormatAyahText(ayah)
 

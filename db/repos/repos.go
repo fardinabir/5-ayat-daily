@@ -62,7 +62,7 @@ func (s *Store) GetAyah(id int) (*models.Ayah, error) {
 
 func (s *Store) GetAyahSuraVerse(suraNo, verseNo int) (*models.Ayah, error) {
 	var ay models.Ayah
-	res := s.DB.Where("sura_no = ? AND verse_no = ?", suraNo, verseNo).Find(&ay)
+	res := s.DB.Where("sura_no = ? AND verse_no = ?", suraNo, verseNo).First(&ay)
 	if res.Error != nil {
 		log.Println("Error while getting ayah in db", res.Error)
 		return nil, res.Error
