@@ -79,6 +79,8 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 				t.fetchPreviousVerse(rs, chatID)
 			} else if command == "/random" {
 				t.fetchRandomVerse(rs, chatID)
+			} else if command == "/getAyah" {
+				t.GetAyah(rs, texts[1], texts[2], chatID)
 			} else if command == "/insertPreferred" {
 				t.SavePreference(rs, texts[1], texts[2], chatID)
 			} else {
@@ -109,7 +111,6 @@ func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) er
 	sId, _ := strconv.Atoi(surahId)
 	vId, _ := strconv.Atoi(verseId)
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
-	fmt.Println(ayah)
 	if err != nil {
 		if err := t.SendMessage(rs, "Failed to get ayah with this combination", chatID, nil); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
@@ -119,6 +120,23 @@ func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) er
 		VerseId: int(ayah.ID),
 	})
 	ayahText := FormatAyahText(ayah) + "\n\n --------- Saved as preferred verse -------- "
+
+	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+		return fmt.Errorf("failed to send ayah message: %w", err)
+	}
+	return nil
+}
+
+func (t *tgBot) GetAyah(rs *Resource, surahId, verseId, chatID string) error {
+	sId, _ := strconv.Atoi(surahId)
+	vId, _ := strconv.Atoi(verseId)
+	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
+	if err != nil {
+		if err := t.SendMessage(rs, "Please follow this format:\n/getAyah <suraNo> <ayatNo>", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+	}
+	ayahText := FormatAyahText(ayah)
 
 	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
