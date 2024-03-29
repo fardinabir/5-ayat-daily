@@ -63,15 +63,16 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 			// Get the message text and chat ID
 			messageText := update.Message.Text
 			chatID := strconv.Itoa(int(update.Message.Chat.ID))
-			log.Println("Message from chatID : ", chatID, "Message Text : ", messageText)
+			userName := update.Message.From.FirstName + " " + update.Message.From.LastName
+			log.Println("Message from user : ", userName, " chatID : ", chatID, " Message Text : ", messageText)
 			texts := strings.Split(messageText, " ") // first word of messageText
 			command := texts[0]
 			// process command
 			if command == "/start" {
 				// Send a welcome message
-				t.handleStart(rs, chatID)
+				t.handleStart(rs, chatID, userName)
 			} else if command == "/subscribe" {
-				t.handleSubscribe(rs, chatID)
+				t.handleSubscribe(rs, chatID, userName)
 			} else if command == "/next" {
 				t.fetchNextVerse(rs, chatID)
 			} else if command == "/previous" {
@@ -87,6 +88,7 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 
 			rs.Store.SaveIncomingMessage(&models.IncomingMessage{
 				ChatID:         chatID,
+				UserName:       userName,
 				MessageText:    messageText,
 				MessageCommand: command,
 			})
@@ -94,12 +96,16 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 	}
 }
 
-func (t *tgBot) handleStart(rs *Resource, chatID string) error {
+func (t *tgBot) handleStart(rs *Resource, chatID, userName string) error {
 	// Send a welcome message
-	return t.SendMessage(rs, "Hello User, Welcome!\n To subscribe the channel click or type:\n/subscribe", chatID, nil)
+	return t.SendMessage(rs, fmt.Sprintf("Hello %v, Welcome!\nTo subscribe the channel click or type:\n/subscribe", userName), chatID, nil)
 }
 
 func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) error {
+	adminID := viper.GetString("telegram.adminID")
+	if chatID != adminID {
+		return fmt.Errorf("unauthorized request to a command")
+	}
 	sId, _ := strconv.Atoi(surahId)
 	vId, _ := strconv.Atoi(verseId)
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
@@ -120,11 +126,12 @@ func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) er
 	return nil
 }
 
-func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
+func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
 	err := rs.Store.Create(&models.Subscriber{
-		ChatID:  chatID,
-		Status:  "active",
-		Channel: "telegram",
+		ChatID:   chatID,
+		UserName: userName,
+		Status:   "active",
+		Channel:  "telegram",
 	})
 
 	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
@@ -139,7 +146,7 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID string) error {
 	}
 
 	adminID := viper.GetString("telegram.adminID")
-	if err := t.SendMessage(rs, fmt.Sprintf("%v joined the channel", chatID), adminID, nil); err != nil {
+	if err := t.SendMessage(rs, fmt.Sprintf("%v joined the channel", userName), adminID, nil); err != nil {
 		return fmt.Errorf("failed to send admin notification: %w", err)
 	}
 	return nil

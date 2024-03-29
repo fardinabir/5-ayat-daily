@@ -7,14 +7,16 @@ const RECEIVERTYPEALL = "all"
 
 type Subscriber struct {
 	gorm.Model
-	ChatID  string `gorm:"uniqueIndex"`
-	Status  string
-	Channel string
+	ChatID   string `gorm:"uniqueIndex"`
+	UserName string
+	Status   string
+	Channel  string
 }
 
 type IncomingMessage struct {
 	gorm.Model
 	ChatID         string
+	UserName       string
 	MessageText    string
 	MessageCommand string
 }
