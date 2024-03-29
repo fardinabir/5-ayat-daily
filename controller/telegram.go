@@ -102,7 +102,11 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 
 func (t *tgBot) handleStart(rs *Resource, chatID, userName string) error {
 	// Send a welcome message
-	return t.SendMessage(rs, fmt.Sprintf("Hello %v, Welcome!\nTo subscribe the channel click or type:\n/subscribe", userName), chatID, nil)
+	err := t.SendMessage(rs, fmt.Sprintf("Hello %v, Welcome!\n\nTo subscribe the channel click or type:\n/subscribe\n", userName), chatID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
+	}
+	return nil
 }
 
 func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) error {
@@ -154,22 +158,33 @@ func (t *tgBot) GetAyah(rs *Resource, texts *[]string, chatID string) error {
 }
 
 func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
-	err := rs.Store.Create(&models.Subscriber{
-		ChatID:   chatID,
-		UserName: userName,
-		Status:   "active",
-		Channel:  "telegram",
-	})
-
-	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
-			return fmt.Errorf("failed to send subscribe message: %w", err)
-		}
-		return nil
-	}
-	t.fetchRandomVerse(rs, chatID)
-	if err := t.SendMessage(rs, "Now you are subscribed! Thanks!", chatID, nil); err != nil {
+	//err := rs.Store.Create(&models.Subscriber{
+	//	ChatID:   chatID,
+	//	UserName: userName,
+	//	Status:   "active",
+	//	Channel:  "telegram",
+	//})
+	//
+	//if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+	//	if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
+	//		return fmt.Errorf("failed to send subscribe message: %w", err)
+	//	}
+	//	return nil
+	//}
+	if err := t.SendMessage(rs, "Your subscription is greatly appreciated – thanks for joining us!\nHave your first Ayat of this day...", chatID, nil); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
+	}
+
+	t.fetchRandomVerse(rs, chatID)
+
+	err := t.SendMessage(rs, fmt.Sprintf("Available Commands :\n\n"+
+		"/subscribe - to get subscribed and receive updates daily\n"+
+		"/next - to get the next ayah\n"+
+		"/previous - to get the previous ayah\n"+
+		"/random - to get a random ayah\n"+
+		"/get_ayat <suraNo> <ayatNo> - to get a specific ayat from given sura"), chatID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 
 	adminID := viper.GetString("telegram.adminID")
