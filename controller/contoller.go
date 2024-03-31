@@ -38,8 +38,7 @@ func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
 	for _, subscriber := range subscribersList {
 		err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
 		if err != nil {
-			log.Println("error while sending msg to : ", subscriber.UserName, err)
-			return err
+			log.Println(fmt.Sprintf("error while sending msg to : %v, chatID : %v", subscriber.UserName, subscriber.ChatID), err)
 		}
 	}
 	return nil
