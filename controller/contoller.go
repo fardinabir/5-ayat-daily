@@ -34,10 +34,11 @@ func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
 	ayahText := FormatAyahText(ayah)
 
 	subscribersList, err := rs.Store.GetAllSubscribers()
+	log.Println("fetched total subscriber : ", len(subscribersList))
 	for _, subscriber := range subscribersList {
 		err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
 		if err != nil {
-			log.Println(err)
+			log.Println("error while sending msg to : ", subscriber.UserName, err)
 			return err
 		}
 	}
