@@ -73,6 +73,8 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 				t.handleStart(rs, chatID, userName)
 			} else if command == "/subscribe" {
 				t.handleSubscribe(rs, chatID, userName)
+			} else if command == "/unsubscribe" {
+				t.handleUnsubscribe(rs, chatID, userName)
 			} else if command == "/next" {
 				t.fetchNextVerse(rs, chatID)
 			} else if command == "/previous" {
@@ -158,16 +160,28 @@ func (t *tgBot) GetAyah(rs *Resource, texts *[]string, chatID string) error {
 }
 
 func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
-	err := rs.Store.Create(&models.Subscriber{
+	sub, err := rs.Store.GetSubscriber(chatID)
+	if sub != nil {
+		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send subscribe message: %w", err)
+		}
+		return nil
+	}
+
+	subscriber := &models.Subscriber{
 		ChatID:   chatID,
 		UserName: userName,
 		Status:   "active",
 		Channel:  "telegram",
-	})
-
-	if err != nil && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
-			return fmt.Errorf("failed to send subscribe message: %w", err)
+	}
+	err = rs.Store.Create(subscriber)
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+			// means user is in unsubscribed status, now tries to subscribe
+			// subscriber.ChatID = subscriber.ChatID + "_old"
+			err = rs.Store.HardDeleteSubscriber(chatID)
+			log.Println("Found old subscription deleting current one, trying again with : ", subscriber.ChatID)
+			t.handleSubscribe(rs, chatID, userName)
 		}
 		return nil
 	}
@@ -182,13 +196,31 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
 		"/next - to get the next ayah\n"+
 		"/previous - to get the previous ayah\n"+
 		"/random - to get a random ayah\n"+
-		"/get_ayat <suraNo> <ayatNo> - to get a specific ayat from given sura"), chatID, nil)
+		"/get_ayat <suraNo> <ayatNo> - to get a specific ayat from given sura\n"+
+		"/unsubscribe - to unsubscribe daily updates"), chatID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
 	adminID := viper.GetString("telegram.adminID")
 	if err := t.SendMessage(rs, fmt.Sprintf("%v joined the channel", userName), adminID, nil); err != nil {
+		return fmt.Errorf("failed to send admin notification: %w", err)
+	}
+	return nil
+}
+
+func (t *tgBot) handleUnsubscribe(rs *Resource, chatID, userName string) error {
+	err := rs.Store.DeleteSubscriber(chatID)
+
+	if err != nil {
+		return err
+	}
+	if err := t.SendMessage(rs, "You are unsubscribed successfully, thanks for being part of the community.", chatID, nil); err != nil {
+		return fmt.Errorf("failed to send unsubscribe message: %w", err)
+	}
+
+	adminID := viper.GetString("telegram.adminID")
+	if err := t.SendMessage(rs, fmt.Sprintf("%v unsubscribed from the channel", userName), adminID, nil); err != nil {
 		return fmt.Errorf("failed to send admin notification: %w", err)
 	}
 	return nil

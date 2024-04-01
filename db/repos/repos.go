@@ -30,9 +30,36 @@ func (s *Store) Create(sd *models.Subscriber) error {
 	return nil
 }
 
+func (s *Store) Save(sd *models.Subscriber) error {
+	res := s.DB.Save(sd)
+	if res.Error != nil {
+		log.Println("Error while creating entry in db", res.Error)
+		return res.Error
+	}
+	return nil
+}
+
+func (s *Store) DeleteSubscriber(chatId string) error {
+	res := s.DB.Where("chat_id = ?", chatId).Delete(&models.Subscriber{})
+	if res.Error != nil {
+		log.Println("Error while deleting entry in db", res.Error)
+		return res.Error
+	}
+	return nil
+}
+
+func (s *Store) HardDeleteSubscriber(chatId string) error {
+	res := s.DB.Unscoped().Where("chat_id = ?", chatId).Delete(&models.Subscriber{})
+	if res.Error != nil {
+		log.Println("Error while deleting entry in db", res.Error)
+		return res.Error
+	}
+	return nil
+}
+
 func (s *Store) GetSubscriber(chatID string) (*models.Subscriber, error) {
 	var sd models.Subscriber
-	res := s.DB.Model(&models.Subscriber{}).Where("chat_id = ?", chatID).First(&sd)
+	res := s.DB.Where("chat_id = ?", chatID).First(&sd)
 	if res.Error != nil {
 		log.Println("Error while getting subscriber in db", res.Error)
 		return nil, res.Error
