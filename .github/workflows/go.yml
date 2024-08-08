@@ -21,7 +21,7 @@ jobs:
       run: go build -v ./...
 
     - name: Build and Push Docker Image
-      uses: mr-smithers-excellent/docker-build-push@v4
+      uses: mr-smithers-excellent/docker-build-push@v6
       with:
         image: fardinabir/five-ayah
         registry: docker.io
