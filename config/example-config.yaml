@@ -1,9 +1,10 @@
 telegram:
-  token: 7023645442:AAGhUiMH3GunS9hjgj9tD_DWfAJHGJTYiESzA
-  adminId: 6212240112
+  # test bot 7023267442:AAGhUiMH3GunS96Z9tD_DWfALIZYZjiESzA
+  token: 7023267442:AAGhUiMH3GunS96Z9tD_DWfALIZYZjiESzA
+  adminId: 6266824055
 
 ticker:
-  duration: 2h
+  duration: 5s
 
 trigger_times:
   - "4:40" # Fajr
