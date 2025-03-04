@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8085:8085"
+    depends_on:
+      - db
+    environment:
+      - TZ=Asia/Dhaka
+    volumes:
+      - ./config:/app/config  # create a .config.yaml file for the server config
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_USER: postgres
+      POSTGRES_DB: five_ayat_daily
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db_snapshot.sql:/docker-entrypoint-initdb.d/db_snapshot.sql  # Load initial SQL
+
+volumes:
+  postgres_data:
