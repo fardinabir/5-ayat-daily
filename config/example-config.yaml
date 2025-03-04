@@ -21,4 +21,4 @@ database:
   port: 5432
   password: 12345
   user: postgres
-  dbname: quran_daily_test # one_ayah_daily # quran_daily_test
+  dbname: five_ayat_daily # one_ayah_daily # quran_daily_test
