@@ -65,29 +65,31 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 			chatID := strconv.Itoa(int(update.Message.Chat.ID))
 			userName := update.Message.From.FirstName + " " + update.Message.From.LastName
 			log.Println("Message from user : ", userName, " chatID : ", chatID, " Message Text : ", messageText)
-			texts := strings.Split(messageText, " ") // first word of messageText
-			command := texts[0]
+
+			command := update.Message.Command()
+			args := update.Message.CommandArguments()
+
 			// process command
-			if command == "/start" {
-				// Send a welcome message
+			switch command {
+			case "start":
 				t.handleStart(rs, chatID, userName)
-			} else if command == "/subscribe" {
+			case "subscribe":
 				t.handleSubscribe(rs, chatID, userName)
-			} else if command == "/unsubscribe" {
+			case "unsubscribe":
 				t.handleUnsubscribe(rs, chatID, userName)
-			} else if command == "/next" {
+			case "next":
 				t.fetchNextVerse(rs, chatID)
-			} else if command == "/previous" {
+			case "previous":
 				t.fetchPreviousVerse(rs, chatID)
-			} else if command == "/random" {
+			case "random":
 				t.fetchRandomVerse(rs, chatID)
-			} else if command == "/get_ayat" {
-				t.GetAyah(rs, &texts, chatID)
-			} else if command == "/insertPreferred" {
-				if len(texts) == 3 {
-					t.SavePreference(rs, texts[1], texts[2], chatID)
-				}
-			} else {
+			case "get_ayat":
+				t.GetAyah(rs, args, chatID)
+			case "insert_preferred":
+				t.SavePreference(rs, args, chatID)
+			case "broadcast":
+				t.BroadCastMessage(rs, args, chatID)
+			default:
 				t.handleInvalidCommand(rs, chatID)
 				command = ""
 			}
@@ -111,13 +113,22 @@ func (t *tgBot) handleStart(rs *Resource, chatID, userName string) error {
 	return nil
 }
 
-func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) error {
+func (t *tgBot) SavePreference(rs *Resource, args, chatID string) error {
+	argFields := strings.Fields(args)
 	adminID := viper.GetString("telegram.adminID")
 	if chatID != adminID {
 		return fmt.Errorf("unauthorized request to a command")
 	}
-	sId, _ := strconv.Atoi(surahId)
-	vId, _ := strconv.Atoi(verseId)
+
+	if len(argFields) != 2 {
+		if err := t.SendMessage(rs, "Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
+			return fmt.Errorf("failed to send message: %w", err)
+		}
+		return fmt.Errorf("wrong command format")
+	}
+	sId, _ := strconv.Atoi(argFields[0])
+	vId, _ := strconv.Atoi(argFields[1])
+
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
 	if err != nil {
 		if err := t.SendMessage(rs, "Failed to get ayah with this combination", chatID, nil); err != nil {
@@ -135,15 +146,16 @@ func (t *tgBot) SavePreference(rs *Resource, surahId, verseId, chatID string) er
 	return nil
 }
 
-func (t *tgBot) GetAyah(rs *Resource, texts *[]string, chatID string) error {
-	if len(*texts) != 3 {
+func (t *tgBot) GetAyah(rs *Resource, args string, chatID string) error {
+	argFields := strings.Fields(args)
+	if len(argFields) != 2 {
 		if err := t.SendMessage(rs, "Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
 		return fmt.Errorf("wrong command format")
 	}
-	sId, _ := strconv.Atoi((*texts)[1])
-	vId, _ := strconv.Atoi((*texts)[2])
+	sId, _ := strconv.Atoi(argFields[0])
+	vId, _ := strconv.Atoi(argFields[1])
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
 	if err != nil {
 		if err := t.SendMessage(rs, "Couldn't fetch requested ayat, Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
