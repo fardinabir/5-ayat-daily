@@ -30,13 +30,17 @@ func NewResource() *Resource {
 	return rs
 }
 
-func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
+func (rs *Resource) PublishToSubscribers(ayah *models.Ayah, generalMsg string) error {
 	ayahText := FormatAyahText(ayah)
 
 	subscribersList, err := rs.Store.GetAllSubscribers()
 	log.Println("fetched total subscriber : ", len(subscribersList))
 	for _, subscriber := range subscribersList {
-		err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
+		if generalMsg != "" {
+			err = rs.Bot.SendMessage(rs, generalMsg, subscriber.ChatID, nil)
+		} else {
+			err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
+		}
 		if err != nil {
 			log.Println(fmt.Sprintf("error while sending msg to : %v, chatID : %v", subscriber.UserName, subscriber.ChatID), err)
 		}
@@ -45,6 +49,9 @@ func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
 }
 
 func FormatAyahText(ayah *models.Ayah) string {
+	if ayah == nil {
+		return ""
+	}
 	return fmt.Sprintf("%v,\n(%v),\n(%v)\n[%v:%v]", ayah.AyahTextArabic, ayah.AyahTextBangla,
 		ayah.AyahTextEnglish, ayah.SuraNo, ayah.VerseNo)
 }
