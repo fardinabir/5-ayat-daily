@@ -105,7 +105,8 @@ func (t *tgBot) ServeBotAPI(rs *Resource) {
 
 func (t *tgBot) handleStart(rs *Resource, chatID, userName string) error {
 	// Send a welcome message
-	err := t.SendMessage(rs, fmt.Sprintf("Hello %v, Welcome!\n\nTo subscribe the channel click or type:\n/subscribe\n", userName), chatID, nil)
+	gMsg := models.GeneralMessage{Message: fmt.Sprintf("Hello %v, Welcome!\n\nTo subscribe the channel click or type:\n/subscribe\n", userName)}
+	err := t.SendMessage(rs, gMsg, chatID)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
@@ -120,7 +121,8 @@ func (t *tgBot) SavePreference(rs *Resource, args, chatID string) error {
 	}
 
 	if len(argFields) != 2 {
-		if err := t.SendMessage(rs, "Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
+		gMsg := models.GeneralMessage{Message: "Please follow this format:\n/get_ayat <suraNo> <ayatNo>"}
+		if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
 		return fmt.Errorf("wrong command format")
@@ -130,16 +132,17 @@ func (t *tgBot) SavePreference(rs *Resource, args, chatID string) error {
 
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
 	if err != nil {
-		if err := t.SendMessage(rs, "Failed to get ayah with this combination", chatID, nil); err != nil {
+		gMsg := models.GeneralMessage{Message: "Failed to get ayah with this combination"}
+		if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
 	}
 	rs.Store.SavePreferredVerse(&models.VersePreference{
 		VerseId: int(ayah.ID),
 	})
-	ayahText := FormatAyahText(ayah) + "\n\n --------- Saved as preferred verse -------- "
+	ayahText := models.GeneralMessage{Message: ayah.GetContent() + "\n\n --------- Saved as preferred verse -------- "}
 
-	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+	if err := t.SendMessage(rs, ayahText, chatID); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
 	}
 	return nil
@@ -150,13 +153,15 @@ func (t *tgBot) BroadCastMessage(rs *Resource, args, chatID string) error {
 	if chatID != adminID {
 		return fmt.Errorf("unauthorized request to a command")
 	}
-	return rs.PublishToSubscribers(nil, args)
+
+	return rs.PublishToSubscribers(models.GeneralMessage{Message: args})
 }
 
 func (t *tgBot) GetAyah(rs *Resource, args string, chatID string) error {
 	argFields := strings.Fields(args)
 	if len(argFields) != 2 {
-		if err := t.SendMessage(rs, "Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
+		gMsg := models.GeneralMessage{Message: "Please follow this format:\n/get_ayat <suraNo> <ayatNo>"}
+		if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
 		return fmt.Errorf("wrong command format")
@@ -165,14 +170,18 @@ func (t *tgBot) GetAyah(rs *Resource, args string, chatID string) error {
 	vId, _ := strconv.Atoi(argFields[1])
 	ayah, err := rs.Store.GetAyahSuraVerse(sId, vId)
 	if err != nil {
-		if err := t.SendMessage(rs, "Couldn't fetch requested ayat, Please follow this format:\n/get_ayat <suraNo> <ayatNo>", chatID, nil); err != nil {
+		gMsg := models.GeneralMessage{Message: "Couldn't fetch requested ayat, Please follow this format:\n/get_ayat <suraNo> <ayatNo>"}
+		if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 			return fmt.Errorf("failed to send message: %w", err)
 		}
 		return fmt.Errorf("wrong sura-ayat format")
 	}
-	ayahText := FormatAyahText(ayah)
+	outgoingAyah := models.OutgoingMessage{
+		ReceiverChatID: chatID,
+		AyahID:         &ayah.ID,
+	}
 
-	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+	if err := t.SendMessage(rs, ayah, chatID, WithDBPersistence(rs, &outgoingAyah)); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
 	}
 	return nil
@@ -181,7 +190,8 @@ func (t *tgBot) GetAyah(rs *Resource, args string, chatID string) error {
 func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
 	sub, err := rs.Store.GetSubscriber(chatID)
 	if sub != nil {
-		if err := t.SendMessage(rs, "You are already subscribed!", chatID, nil); err != nil {
+		gMsg := models.GeneralMessage{Message: "You are already subscribed!"}
+		if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 			return fmt.Errorf("failed to send subscribe message: %w", err)
 		}
 		return nil
@@ -204,25 +214,28 @@ func (t *tgBot) handleSubscribe(rs *Resource, chatID, userName string) error {
 		}
 		return nil
 	}
-	if err := t.SendMessage(rs, "Your subscription is greatly appreciated – thanks for joining us!\nHave your first Ayat of this day...", chatID, nil); err != nil {
+	gMsg := models.GeneralMessage{Message: "Your subscription is greatly appreciated – thanks for joining us!\nHave your first Ayat of this day..."}
+	if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 		return fmt.Errorf("failed to send subscribe message: %w", err)
 	}
 
 	t.fetchRandomVerse(rs, chatID)
 
-	err = t.SendMessage(rs, fmt.Sprintf("Available Commands :\n\n"+
-		"/subscribe - to get subscribed and receive updates daily\n"+
-		"/next - to get the next ayah\n"+
-		"/previous - to get the previous ayah\n"+
-		"/random - to get a random ayah\n"+
-		"/get_ayat <suraNo> <ayatNo> - to get a specific ayat from given sura\n"+
-		"/unsubscribe - to unsubscribe daily updates"), chatID, nil)
+	gMsg = models.GeneralMessage{Message: fmt.Sprintf("Available Commands :\n\n" +
+		"/subscribe - to get subscribed and receive updates daily\n" +
+		"/next - to get the next ayah\n" +
+		"/previous - to get the previous ayah\n" +
+		"/random - to get a random ayah\n" +
+		"/get_ayat <suraNo> <ayatNo> - to get a specific ayat from given sura\n" +
+		"/unsubscribe - to unsubscribe daily updates")}
+	err = t.SendMessage(rs, gMsg, chatID)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
 	adminID := viper.GetString("telegram.adminID")
-	if err := t.SendMessage(rs, fmt.Sprintf("%v joined the channel", userName), adminID, nil); err != nil {
+	gMsg = models.GeneralMessage{Message: fmt.Sprintf("%v joined the channel", userName)}
+	if err := t.SendMessage(rs, gMsg, adminID); err != nil {
 		return fmt.Errorf("failed to send admin notification: %w", err)
 	}
 	return nil
@@ -234,12 +247,14 @@ func (t *tgBot) handleUnsubscribe(rs *Resource, chatID, userName string) error {
 	if err != nil {
 		return err
 	}
-	if err := t.SendMessage(rs, "You are unsubscribed successfully, thanks for being part of the community.", chatID, nil); err != nil {
+	gMsg := models.GeneralMessage{Message: "You are unsubscribed successfully, thanks for being part of the community."}
+	if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 		return fmt.Errorf("failed to send unsubscribe message: %w", err)
 	}
 
 	adminID := viper.GetString("telegram.adminID")
-	if err := t.SendMessage(rs, fmt.Sprintf("%v unsubscribed from the channel", userName), adminID, nil); err != nil {
+	gMsg = models.GeneralMessage{Message: fmt.Sprintf("%v unsubscribed from the channel", userName)}
+	if err := t.SendMessage(rs, gMsg, adminID); err != nil {
 		return fmt.Errorf("failed to send admin notification: %w", err)
 	}
 	return nil
@@ -249,7 +264,8 @@ func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			if err := t.SendMessage(rs, "Subscribe to get messages, click or type /subscribe", chatID, nil); err != nil {
+			gMsg := models.GeneralMessage{Message: "Subscribe to get messages, click or type /subscribe"}
+			if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 				return fmt.Errorf("failed to send subscribe message: %w", err)
 			}
 		}
@@ -257,9 +273,12 @@ func (t *tgBot) fetchNextVerse(rs *Resource, chatID string) error {
 		return err
 	}
 	ayah := rs.FetchNextVerse(int(*lastMessage.AyahID))
-	ayahText := FormatAyahText(ayah)
+	outgoingAyah := models.OutgoingMessage{
+		ReceiverChatID: chatID,
+		AyahID:         &ayah.ID,
+	}
 
-	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+	if err := t.SendMessage(rs, ayah, chatID, WithDBPersistence(rs, &outgoingAyah)); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
 	}
 	return nil
@@ -269,7 +288,8 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 	lastMessage, err := rs.Store.GetLastOutgoingAyah(chatID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			if err := t.SendMessage(rs, "Subscribe to get messages, click or type /subscribe", chatID, nil); err != nil {
+			gMsg := models.GeneralMessage{Message: "Subscribe to get messages, click or type /subscribe"}
+			if err := t.SendMessage(rs, gMsg, chatID, nil); err != nil {
 				return fmt.Errorf("failed to send subscribe message: %w", err)
 			}
 		}
@@ -277,9 +297,12 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 		return err
 	}
 	ayah := rs.FetchPreviousVerse(int(*lastMessage.AyahID))
-	ayahText := FormatAyahText(ayah)
+	outgoingAyah := models.OutgoingMessage{
+		ReceiverChatID: chatID,
+		AyahID:         &ayah.ID,
+	}
 
-	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+	if err := t.SendMessage(rs, ayah, chatID, WithDBPersistence(rs, &outgoingAyah)); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
 	}
 	return nil
@@ -287,14 +310,18 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 
 func (t *tgBot) fetchRandomVerse(rs *Resource, chatID string) error {
 	ayah := rs.FetchRandomVerse()
-	ayahText := FormatAyahText(ayah)
+	outgoingAyah := models.OutgoingMessage{
+		ReceiverChatID: chatID,
+		AyahID:         &ayah.ID,
+	}
 
-	if err := t.SendMessage(rs, ayahText, chatID, &ayah.ID); err != nil {
+	if err := t.SendMessage(rs, ayah, chatID, WithDBPersistence(rs, &outgoingAyah)); err != nil {
 		return fmt.Errorf("failed to send ayah message: %w", err)
 	}
 	return nil
 }
 
 func (t *tgBot) handleInvalidCommand(rs *Resource, chatID string) error {
-	return t.SendMessage(rs, "Invalid command or format, type '/' to see the available commands", chatID, nil)
+	gMsg := models.GeneralMessage{Message: "Invalid command or format, type '/' to see the available commands"}
+	return t.SendMessage(rs, gMsg, chatID, nil)
 }
