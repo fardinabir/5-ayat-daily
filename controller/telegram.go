@@ -289,7 +289,7 @@ func (t *tgBot) fetchPreviousVerse(rs *Resource, chatID string) error {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			gMsg := models.GeneralMessage{Message: "Subscribe to get messages, click or type /subscribe"}
-			if err := t.SendMessage(rs, gMsg, chatID, nil); err != nil {
+			if err := t.SendMessage(rs, gMsg, chatID); err != nil {
 				return fmt.Errorf("failed to send subscribe message: %w", err)
 			}
 		}
