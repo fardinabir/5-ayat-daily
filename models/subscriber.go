@@ -21,21 +21,12 @@ type IncomingMessage struct {
 	MessageCommand string
 }
 
+// TODO: Remove GeneralMessage field from the model, as it's not relavant
 type OutgoingMessage struct {
 	gorm.Model
 	ReceiverChatID string
 	AyahID         *uint
 	GeneralMessage string
-}
-
-type Ayah struct {
-	gorm.Model
-	SuraNo          int
-	VerseNo         int
-	AyahTextArabic  string
-	AyahTextBangla  string
-	AyahTextEnglish string
-	CategoryID      int
 }
 
 type Category struct {

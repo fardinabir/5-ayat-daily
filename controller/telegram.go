@@ -32,22 +32,21 @@ func NewTgBot() (*tgBot, error) {
 	return tgBotInstance, nil
 }
 
-func (t *tgBot) SendMessage(rs *Resource, message, chatID string, ayahId *uint) error {
-	msg := &models.OutgoingMessage{
-		ReceiverChatID: chatID,
-		AyahID:         ayahId,
-	}
-	if ayahId == nil {
-		msg.GeneralMessage = message
-	}
-	rs.Store.SaveOutgoingMessage(msg)
-
+func (t *tgBot) SendMessage(rs *Resource, msg Message, chatID string, processors ...MessageProcessor) error {
 	chatId, _ := strconv.Atoi(chatID)
-	msgCfg := tgbotapi.NewMessage(int64(chatId), message)
+	msgCfg := tgbotapi.NewMessage(int64(chatId), msg.GetContent())
 	_, err := t.API.Send(msgCfg)
 	if err != nil {
 		log.Println("error sending telegram message:", err)
 		return err
+	}
+
+	// Execute all message processors
+	for _, process := range processors {
+		if err := process(); err != nil {
+			log.Printf("processor error: %v", err)
+			return err
+		}
 	}
 	return nil
 }

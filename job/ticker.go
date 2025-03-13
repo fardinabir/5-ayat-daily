@@ -22,7 +22,7 @@ func StartTicker(rs *controller.Resource, wg *sync.WaitGroup) {
 				go func() {
 					log.Println("######################### Started Fetching #########################")
 					ayah := rs.FetchNewVerse()
-					err := rs.PublishToSubscribers(ayah, "")
+					err := rs.PublishToSubscribers(ayah)
 					if err != nil {
 						log.Println("err while publishing : ", err)
 					}
