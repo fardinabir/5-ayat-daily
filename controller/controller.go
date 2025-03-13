@@ -30,23 +30,30 @@ func NewResource() *Resource {
 	return rs
 }
 
-func (rs *Resource) PublishToSubscribers(ayah *models.Ayah) error {
-	ayahText := FormatAyahText(ayah)
-
+func (rs *Resource) PublishToSubscribers(msg Message) error {
 	subscribersList, err := rs.Store.GetAllSubscribers()
 	log.Println("fetched total subscriber : ", len(subscribersList))
+
 	for _, subscriber := range subscribersList {
-		err = rs.Bot.SendMessage(rs, ayahText, subscriber.ChatID, &ayah.ID)
+		processorList := make([]MessageProcessor, 0)
+
+		// Add base logging processors
+		//processorList = append(processorList, WithMessageLogging(subscriber.ChatID, msg))
+
+		// Conditionally append db processors
+		if ayah, ok := msg.(*models.Ayah); ok {
+			processorList = append(processorList, WithDBPersistence(rs, &models.OutgoingMessage{
+				ReceiverChatID: subscriber.ChatID,
+				AyahID:         &ayah.ID,
+			}))
+		}
+
+		err = rs.Bot.SendMessage(rs, msg, subscriber.ChatID, processorList...)
 		if err != nil {
 			log.Println(fmt.Sprintf("error while sending msg to : %v, chatID : %v", subscriber.UserName, subscriber.ChatID), err)
 		}
 	}
 	return nil
-}
-
-func FormatAyahText(ayah *models.Ayah) string {
-	return fmt.Sprintf("%v,\n(%v),\n(%v)\n[%v:%v]", ayah.AyahTextArabic, ayah.AyahTextBangla,
-		ayah.AyahTextEnglish, ayah.SuraNo, ayah.VerseNo)
 }
 
 func (rs *Resource) ServeBot() {
