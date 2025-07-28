@@ -19,7 +19,7 @@ func TestArabic_InsertData(t *testing.T) {
 	cc := ConnectDB()
 
 	// Open the CSV file
-	file, err := os.Open("/Users/pathaoltd/Documents/QuranAyats/QuranAllVerseSheet1.csv")
+	file, err := os.Open("/path")
 	if err != nil {
 		fmt.Println("Error opening CSV file:", err)
 		return
