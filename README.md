@@ -6,6 +6,12 @@
 
 **'5 Ayat Daily'** is a Telegram bot designed to be your spiritual companion, sharing beautiful verses from the Holy Quran with you every day. Whether you're looking to cultivate the habit of daily Quran reading or seeking spiritual guidance, this bot aims to assist you on your journey of spiritual growth. 🕌✨
 
+<p align="center">
+  <a href='https://ibb.co.com/PzFxZf01' target='_blank'>
+    <img src='https://i.ibb.co.com/G3n7vbNC/1711636765694.jpg'  width="375 height="120" alt='Blank-diagram'/>
+  </a>
+</p>
+
 ### Motivation:
 As humans, 🌟 we often struggle with distractions and find it challenging to establish habits. Strategies outlined in books such as "Atomic Habits" advocate for taking incremental steps to cultivate habits and maintain consistency.📚 For Muslims, the practice of daily Quran reading holds significant value, yet it can be difficult to sustain. The creation of the '5 Ayat Daily' bot is a proactive effort to address this challenge and promote the blessings of regular Quran reading.✨🕌
 
